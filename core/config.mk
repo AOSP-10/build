@@ -241,6 +241,9 @@ $(call project-set-path-variant,ril,TARGET_RIL_VARIANT,hardware/ril)
 
 ifneq ($(CUSTOM_BUILD),)
 include vendor/aosp/config/BoardConfig.mk
+else
+PRODUCT_SOONG_NAMESPACES += \
+    hardware/ril
 endif
 
 # The build system exposes several variables for where to find the kernel
