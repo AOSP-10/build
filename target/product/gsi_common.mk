@@ -25,6 +25,11 @@ ifeq ($(CUSTOM_BUILD),)
 $(call inherit-product-if-exists, frameworks/base/data/sounds/AllAudio.mk)
 endif
 
+# Additional settings used in all AOSP builds
+PRODUCT_PRODUCT_PROPERTIES += \
+    ro.config.ringtone=Ring_Synth_04.ogg \
+    ro.config.notification_sound=pixiedust.ogg \
+
 # The mainline checking whitelist, should be clean up
 PRODUCT_ARTIFACT_PATH_REQUIREMENT_WHITELIST += \
     system/app/messaging/messaging.apk \
@@ -72,7 +77,10 @@ PRODUCT_EXTRA_VNDK_VERSIONS := 28
 
 # More AOSP packages
 PRODUCT_PACKAGES += \
-    WAPPushManager
+    messaging \
+    PhotoTable \
+    WAPPushManager \
+    WallpaperPicker \
 
 # Telephony:
 #   Provide a APN configuration to GSI product
