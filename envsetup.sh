@@ -651,20 +651,6 @@ function lunch()
     fi
 
     check_product $product
-    if [ $? -ne 0 ]
-    then
-        # if we can't find a product, try to grab it
-        T=$(gettop)
-        cd $T > /dev/null
-        vendor/aosp/build/tools/roomservice.py $product
-        cd - > /dev/null
-        check_product $product
-    else
-        T=$(gettop)
-        cd $T > /dev/null
-        vendor/aosp/build/tools/roomservice.py $product true
-        cd - > /dev/null
-    fi
 
     TARGET_PRODUCT=$product \
     TARGET_BUILD_VARIANT=$variant \
