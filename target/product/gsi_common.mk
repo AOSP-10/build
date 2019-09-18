@@ -77,10 +77,7 @@ PRODUCT_EXTRA_VNDK_VERSIONS := 28
 
 # More AOSP packages
 PRODUCT_PACKAGES += \
-    messaging \
-    PhotoTable \
-    WAPPushManager \
-    WallpaperPicker \
+    WAPPushManager
 
 # Telephony:
 #   Provide a APN configuration to GSI product

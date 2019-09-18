@@ -282,12 +282,6 @@ class BuildInfo(object):
     device: The device name, which could come from OEM dicts if applicable.
   """
 
-  _RO_PRODUCT_RESOLVE_PROPS = ["ro.product.brand", "ro.product.device",
-                               "ro.product.manufacturer", "ro.product.model",
-                               "ro.product.name"]
-  _RO_PRODUCT_PROPS_DEFAULT_SOURCE_ORDER = ["product", "product_services",
-                                            "odm", "vendor", "system"]
-
   def __init__(self, info_dict, oem_dicts):
     """Initializes a BuildInfo instance with the given dicts.
 
@@ -368,42 +362,10 @@ class BuildInfo(object):
 
   def GetBuildProp(self, prop):
     """Returns the inquired build property."""
-    if prop in BuildInfo._RO_PRODUCT_RESOLVE_PROPS:
-      return self._ResolveRoProductBuildProp(prop)
-
     try:
       return self.info_dict.get("build.prop", {})[prop]
     except KeyError:
       raise common.ExternalError("couldn't find %s in build.prop" % (prop,))
-
-  def _ResolveRoProductBuildProp(self, prop):
-    """Resolves the inquired ro.product.* build property"""
-    prop_val = self.info_dict.get("build.prop", {}).get(prop)
-    if prop_val:
-      return prop_val
-
-    source_order_val = self.info_dict.get("build.prop", {}).get(
-        "ro.product.property_source_order")
-    if source_order_val:
-      source_order = source_order_val.split(",")
-    else:
-      source_order = BuildInfo._RO_PRODUCT_PROPS_DEFAULT_SOURCE_ORDER
-
-    # Check that all sources in ro.product.property_source_order are valid
-    if any([x not in BuildInfo._RO_PRODUCT_PROPS_DEFAULT_SOURCE_ORDER
-            for x in source_order]):
-      raise common.ExternalError(
-          "Invalid ro.product.property_source_order '{}'".format(source_order))
-
-    for source in source_order:
-      source_prop = prop.replace(
-          "ro.product", "ro.product.{}".format(source), 1)
-      prop_val = self.info_dict.get(
-          "{}.build.prop".format(source), {}).get(source_prop)
-      if prop_val:
-        return prop_val
-
-    raise common.ExternalError("couldn't resolve {}".format(prop))
 
   def GetVendorBuildProp(self, prop):
     """Returns the inquired vendor build property."""
@@ -420,18 +382,7 @@ class BuildInfo(object):
 
   def CalculateFingerprint(self):
     if self.oem_props is None:
-      try:
-        return self.GetBuildProp("ro.build.fingerprint")
-      except common.ExternalError:
-        return "{}/{}/{}:{}/{}/{}:{}/{}".format(
-            self.GetBuildProp("ro.product.brand"),
-            self.GetBuildProp("ro.product.name"),
-            self.GetBuildProp("ro.product.device"),
-            self.GetBuildProp("ro.build.version.release"),
-            self.GetBuildProp("ro.build.id"),
-            self.GetBuildProp("ro.build.version.incremental"),
-            self.GetBuildProp("ro.build.type"),
-            self.GetBuildProp("ro.build.tags"))
+      return self.GetBuildProp("ro.build.fingerprint")
     return "%s/%s/%s:%s" % (
         self.GetOemProperty("ro.product.brand"),
         self.GetOemProperty("ro.product.name"),
@@ -1034,8 +985,6 @@ else if get_stage("%(bcb_dev)s") == "3/3" then
       block_diff.WriteScript(script, output_zip,
                              progress=progress_dict.get(block_diff.partition),
                              write_verify_script=OPTIONS.verify)
-
-  AddCompatibilityArchiveIfTrebleEnabled(input_zip, output_zip, target_info)
 
   boot_img = common.GetBootableImage(
       "boot.img", "boot.img", OPTIONS.input_tmp, "BOOT")
@@ -1681,9 +1630,6 @@ def WriteBlockIncrementalOTAPackage(target_zip, source_zip, output_file):
   else:
     vendor_diff = None
 
-  AddCompatibilityArchiveIfTrebleEnabled(
-      target_zip, output_zip, target_info, source_info)
-
   # Assertions (e.g. device properties check).
   target_info.WriteDeviceAssertions(script, OPTIONS.oem_no_mount)
   device_specific.IncrementalOTA_Assertions()
@@ -2135,9 +2081,6 @@ def WriteABOTAPackageWithBrilloScript(target_file, output_file,
                          compress_type=zipfile.ZIP_STORED)
     else:
       logger.warning("Cannot find care map file in target_file package")
-
-  AddCompatibilityArchiveIfTrebleEnabled(
-      target_zip, output_zip, target_info, source_info)
 
   common.ZipClose(target_zip)
 

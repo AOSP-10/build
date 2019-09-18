@@ -587,7 +587,7 @@ function print_lunch_menu()
 
     local i=1
     local choice
-    for choice in $(TARGET_BUILD_APPS= get_build_var COMMON_LUNCH_CHOICES)
+    for choice in ${choices[@]}
     do
         echo "     $i. $choice"
         i=$(($i+1))
@@ -600,23 +600,49 @@ function lunch()
 {
     local answer
 
+    choices=()
+    for makefile_target in $(TARGET_BUILD_APPS= get_build_var COMMON_LUNCH_CHOICES)
+    do
+        choices+=($makefile_target)
+    done
+    for other_target in ${lunch_others_targets[@]}
+    do
+        if [[ " ${choices[*]} " != *"$other_target"* ]];
+        then
+            choices+=($other_target)
+        fi
+    done
+
     if [ "$1" ] ; then
         answer=$1
+        if (echo -n $answer | grep -q -e "^[0-9][0-9]*$")
+        then
+            echo
+            echo "Invalid lunch combo"
+            return 1
+        fi
     else
         print_lunch_menu
-        echo -n "Which would you like? [aosp_arm-eng] "
+        echo -n "Which would you like? "
         read answer
+        if ! (echo -n $answer | grep -q -e "^[0-9][0-9]*$")
+        then
+            echo
+            echo "Invalid lunch combo"
+            return 1
+        fi
     fi
 
     local selection=
 
     if [ -z "$answer" ]
     then
-        selection=aosp_arm-eng
+        echo
+        echo "Invalid lunch combo"
+        return 1
     elif (echo -n $answer | grep -q -e "^[0-9][0-9]*$")
     then
-        local choices=($(TARGET_BUILD_APPS= get_build_var COMMON_LUNCH_CHOICES))
-        if [ $answer -le ${#choices[@]} ]
+        if [ $answer -ge 1 ] && [ $answer -le ${#choices[@]} ]
         then
             # array in zsh starts from 1 instead of 0.
             if [ -n "$ZSH_VERSION" ]
@@ -625,6 +651,10 @@ function lunch()
             else
                 selection=${choices[$(($answer-1))]}
             fi
+        else
+            echo
+            echo "Invalid lunch combo"
+            return 1
         fi
     else
         selection=$answer
@@ -651,6 +681,20 @@ function lunch()
     fi
 
     check_product $product
+    if [ $? -ne 0 ]
+    then
+        # if we can't find a product, try to grab it
+        T=$(gettop)
+        cd $T > /dev/null
+        vendor/aosp/build/tools/roomservice.py $product
+        cd - > /dev/null
+        check_product $product
+    else
+        T=$(gettop)
+        cd $T > /dev/null
+        vendor/aosp/build/tools/roomservice.py $product true
+        cd - > /dev/null
+    fi
 
     TARGET_PRODUCT=$product \
     TARGET_BUILD_VARIANT=$variant \
@@ -1603,6 +1647,17 @@ function source_vendorsetup() {
 validate_current_shell
 source_vendorsetup
 addcompletions
+
+# check and set ccache path on envsetup
+if [ -z ${CCACHE_EXEC} ]; then
+    ccache_path=$(which ccache)
+    if [ ! -z "$ccache_path" ]; then
+        export CCACHE_EXEC="$ccache_path"
+        echo "ccache found and CCACHE_EXEC has been set to : $ccache_path"
+    else
+        echo "ccache not found/installed!"
+    fi
+fi
 
 export ANDROID_BUILD_TOP=$(gettop)
 
