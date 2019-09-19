@@ -56,6 +56,7 @@ PRODUCT_PACKAGES += \
     MmsService \
     MtpDocumentsProvider \
     MusicFX \
+    NfcNci \
     OsuLogin \
     PacProcessor \
     PrintRecommendationService \
@@ -84,11 +85,6 @@ PRODUCT_COPY_FILES += \
     frameworks/av/media/libeffects/data/audio_effects.conf:system/etc/audio_effects.conf
 
 PRODUCT_PROPERTY_OVERRIDES += \
-    ro.carrier=unknown
-
-ifeq ($(CUSTOM_BUILD),)
-PRODUCT_PROPERTY_OVERRIDES += \
+    ro.carrier=unknown \
     ro.config.notification_sound=OnTheHunt.ogg \
     ro.config.alarm_alert=Alarm_Classic.ogg
-endif
-
